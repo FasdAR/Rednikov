@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.DevLife.Base.V23" parent="Theme.DevLife.Base">
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.DevLife.Main" parent="Theme.DevLife.Base.V23"/>
+</resources>
