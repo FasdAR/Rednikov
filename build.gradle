@@ -24,3 +24,27 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+ext {
+    buildInfo = [
+            targetSdkVer: 30,
+            buildToolsVer: "30.0.2",
+            minSdkVer: 21
+    ]
+
+    versions = [
+            room: "2.2.6",
+            retrofit: "2.9.0"
+    ]
+
+    room = [
+            runtime: "androidx.room:room-runtime:$versions.room",
+            ktx: "androidx.room:room-ktx:$versions.room",
+            compiler: "androidx.room:room-compiler:$versions.room",
+            test: "androidx.room:room-testing:$versions.room"
+    ]
+
+    retrofit = [
+            main: "com.squareup.retrofit2:retrofit:$versions.retrofit"
+    ]
+}
