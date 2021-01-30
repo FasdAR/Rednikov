@@ -15,5 +15,5 @@ interface DevLifeApi
         @Path("type_section") typeSection: String,
         @Path("page") page: Int,
         @Query("json") json: Boolean = true
-    ): Flow<PostNetwork>
+    ): PostNetwork
 }

@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.fasdev.devlife.data.source.room.DevLifeDB.Companion.VERSION
 import com.fasdev.devlife.data.source.room.dao.PostDao
+import com.fasdev.devlife.data.source.room.dao.PostQueueDao
 import com.fasdev.devlife.data.source.room.dao.QueueDao
 import com.fasdev.devlife.data.source.room.model.PostDB
 import com.fasdev.devlife.data.source.room.model.QueueDB
@@ -21,4 +22,5 @@ abstract class DevLifeDB: RoomDatabase()
 
     abstract fun getPostDao(): PostDao
     abstract fun getQueueDao(): QueueDao
+    abstract fun getPostQueueDao(): PostQueueDao
 }

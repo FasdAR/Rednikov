@@ -34,7 +34,16 @@ ext {
 
     versions = [
             room: "2.2.6",
-            retrofit: "2.9.0"
+            retrofit: "2.9.0",
+            kodein: "7.2.0",
+            glide: "4.12.0",
+            lifecycle: "2.2.0"
+    ]
+
+    lifecycle = [
+            extensions: "androidx.lifecycle:lifecycle-extensions:$versions.lifecycle",
+            liveData: "androidx.lifecycle:lifecycle-livedata-ktx:$versions.lifecycle",
+            viewModel: "androidx.lifecycle:lifecycle-viewmodel-ktx:$versions.lifecycle"
     ]
 
     room = [
@@ -45,6 +54,14 @@ ext {
     ]
 
     retrofit = [
-            main: "com.squareup.retrofit2:retrofit:$versions.retrofit"
+            main: "com.squareup.retrofit2:retrofit:$versions.retrofit",
+            gson: "com.squareup.retrofit2:converter-gson:$versions.retrofit"
     ]
+
+    kodein = [
+            di: "org.kodein.di:kodein-di:$versions.kodein",
+            androidX: "org.kodein.di:kodein-di-framework-android-x:$versions.kodein"
+    ]
+
+    glide = "com.github.bumptech.glide:glide:$versions.glide"
 }

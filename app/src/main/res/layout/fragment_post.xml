@@ -34,7 +34,7 @@
             android:layout_height="wrap_content"
             android:padding="16dp"
             android:textColor="@color/white"
-            android:id="@+id/text_pos"
+            android:id="@+id/text_post"
             android:background="@drawable/sh_overlay_img"
             android:layout_gravity="bottom"
             tools:text="Когда нет времени сделать все правильно"/>

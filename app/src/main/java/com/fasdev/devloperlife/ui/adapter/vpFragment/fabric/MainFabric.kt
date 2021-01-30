@@ -3,7 +3,7 @@ package com.fasdev.devloperlife.ui.adapter.vpFragment.fabric
 import androidx.fragment.app.Fragment
 import com.fasdev.devlife.core.common.model.TypeSection
 import com.fasdev.devloperlife.ui.adapter.vpFragment.VpFragment
-import com.fasdev.devloperlife.ui.fragment.PostFragment
+import com.fasdev.devloperlife.ui.fragment.post.ui.PostFragment
 import java.lang.IllegalArgumentException
 
 class MainFabric: VpFragment.Fabric
