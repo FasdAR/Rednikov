@@ -6,4 +6,7 @@
     <string name="hot">Горячие</string>
     <string name="next">Далее</string>
     <string name="back">Назад</string>
+    <string name="host_ex">Произошла ошибка при загрузке данных, проверьте подключение к сети</string>
+    <string name="repeat">Повторить</string>
+    <string name="posts_ended">Посты закончились</string>
 </resources>

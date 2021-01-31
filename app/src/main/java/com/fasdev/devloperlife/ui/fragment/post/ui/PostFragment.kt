@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
@@ -46,6 +47,7 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
         binding = FragmentPostBinding.inflate(inflater)
         binding.fabNext.setOnClickListener(this)
         binding.fabReplay.setOnClickListener(this)
+        binding.repeatBtn.setOnClickListener(this)
 
         return binding.root
     }
@@ -55,19 +57,48 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
 
         viewModel.currentPost.observe(viewLifecycleOwner) {
             it?.let {
+                setVisibleMainLayout(true)
+                binding.nullPost.isVisible = false
+
                 Glide.with(this)
                         .load(it.gifURL)
                         .transition(withCrossFade())
                         .into(binding.imagePost)
 
                 binding.textPost.text = it.description
+            } ?: kotlin.run {
+                setVisibleMainLayout(false)
+                binding.nullPost.isVisible = true
             }
         }
 
         viewModel.isEnableBackBtn.observe(viewLifecycleOwner) {
             binding.fabReplay.isEnabled = it
         }
+
+        viewModel.unknownHost.observe(viewLifecycleOwner) {
+            setVisibleMainLayout(!it)
+            setVisibleExHostLayout(it)
+        }
+
+        viewModel.isShowLoading.observe(viewLifecycleOwner) {
+            if (it) {
+                setVisibleMainLayout(false)
+            }
+            binding.progressBar.isVisible = it
+        }
+
         viewModel.getNextPost(typeSection)
+    }
+
+    private fun setVisibleMainLayout(isVisible: Boolean) {
+        binding.fabReplay.isVisible = isVisible
+        binding.fabNext.isVisible = isVisible
+        binding.postCard.isVisible = isVisible
+    }
+
+    private fun setVisibleExHostLayout(isVisible: Boolean) {
+        binding.exHost.isVisible = isVisible
     }
 
     override fun onClick(v: View?) {
@@ -77,6 +108,11 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
             }
             R.id.fab_replay -> {
                 viewModel.getBackPost(typeSection)
+            }
+            R.id.repeat_btn -> {
+                setVisibleExHostLayout(false)
+
+                viewModel.getNextPost(typeSection)
             }
         }
     }

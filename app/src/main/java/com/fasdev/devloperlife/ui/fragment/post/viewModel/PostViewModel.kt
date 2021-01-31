@@ -9,6 +9,8 @@ import com.fasdev.devlife.data.repository.network.NetworkRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.lang.Exception
+import java.net.UnknownHostException
 
 class PostViewModel(private var postCase: PostCase): ViewModel()
 {
@@ -18,6 +20,8 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
         }
     }
 
+    val isShowLoading: MutableLiveData<Boolean> = MutableLiveData(false)
+    val unknownHost: MutableLiveData<Boolean> = MutableLiveData(false)
     val isEnableBackBtn: MutableLiveData<Boolean> = MutableLiveData(false)
     val currentPost: MutableLiveData<Post> = MutableLiveData()
 
@@ -25,8 +29,14 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
         viewModelScope.launch {
             postCase.getNextPost(typeSection)
                     .flowOn(Dispatchers.IO)
+                    .onStart {
+                        isShowLoading.postValue(true)
+                    }
+                    .onCompletion {
+                        isShowLoading.postValue(false)
+                    }
                     .catch { ex ->
-                        Log.e("EXCEPTION_POST", ex.toString())
+                        handleException(ex)
                     }
                     .collect {
                         currentPost.postValue(it)
@@ -39,13 +49,28 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
         viewModelScope.launch {
             postCase.getBackPost(typeSection)
                     .flowOn(Dispatchers.IO)
+                    .onStart {
+                        isShowLoading.postValue(true)
+                    }
+                    .onCompletion {
+                        isShowLoading.postValue(false)
+                    }
                     .catch { ex ->
-                        Log.e("EXCEPTION_POST", ex.toString())
+                        handleException(ex)
                     }
                     .collect {
                         currentPost.postValue(it)
                         checkLastPost(typeSection)
                     }
+        }
+    }
+
+    private fun handleException(ex: Throwable) {
+        when (ex)
+        {
+            is UnknownHostException -> {
+                unknownHost.postValue(true)
+            }
         }
     }
 
