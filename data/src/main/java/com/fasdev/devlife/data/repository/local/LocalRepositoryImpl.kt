@@ -8,6 +8,7 @@ import com.fasdev.devlife.data.source.room.dao.QueueDao
 import com.fasdev.devlife.data.source.room.model.toPost
 import com.fasdev.devlife.data.source.room.model.toPostDB
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 class LocalRepositoryImpl(private val queueDao: QueueDao,
@@ -22,11 +23,21 @@ class LocalRepositoryImpl(private val queueDao: QueueDao,
         postQueueDao.cachePosts(typeSection.type, posts.map { it.toPostDB() })
     }
 
-    override fun getPost(idPost: Long): Flow<Post?> = postDao.getPost(idPost).map { it?.toPost() }
+    override fun getPost(idPost: Long): Flow<Post?> = flow { emit(postDao.getPost(idPost)?.toPost()) }
 
-    override fun getPositionPost(typeSection: TypeSection, idPost: Long): Flow<Int> =
-            queueDao.getIndexCurrentItem(typeSection.type, idPost)
+    override fun getPositionPost(typeSection: TypeSection, idPost: Long): Flow<Int> = flow {
+        emit(queueDao.getIndexCurrentItem(typeSection.type, idPost))
+    }
 
-    override fun getNextPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?> =
-            queueDao.getNextPost(typeSection.type, prevIdPost).map { it?.post?.toPost() }
+    override fun getNextPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?> = flow {
+        if (prevIdPost == -1L) {
+            emit(queueDao.getFirstPost(typeSection.type)?.post?.toPost())
+        } else {
+            emit(queueDao.getNextPost(typeSection.type, prevIdPost)?.post?.toPost())
+        }
+    }
+
+    override fun getBackPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?> = flow {
+        emit(queueDao.getBackPost(typeSection.type, prevIdPost)?.post?.toPost())
+    }
 }

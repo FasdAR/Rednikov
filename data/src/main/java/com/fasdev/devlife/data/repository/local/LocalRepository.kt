@@ -8,7 +8,10 @@ interface LocalRepository
 {
     fun savePost(typeSection: TypeSection, post: Post)
     fun savePosts(typeSection: TypeSection, list: List<Post>)
+
     fun getPost(idPost: Long): Flow<Post?>
     fun getPositionPost(typeSection: TypeSection, idPost: Long): Flow<Int>
+
     fun getNextPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?>
+    fun getBackPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?>
 }

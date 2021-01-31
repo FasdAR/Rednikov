@@ -54,12 +54,14 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
         super.onActivityCreated(savedInstanceState)
 
         viewModel.currentPost.observe(viewLifecycleOwner) {
-            Glide.with(this)
-                    .load(it.gifURL)
-                    .transition(withCrossFade())
-                    .into(binding.imagePost)
+            it?.let {
+                Glide.with(this)
+                        .load(it.gifURL)
+                        .transition(withCrossFade())
+                        .into(binding.imagePost)
 
-            binding.textPost.text = it.description
+                binding.textPost.text = it.description
+            }
         }
         viewModel.getNextPost(typeSection)
     }
@@ -70,7 +72,7 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
                 viewModel.getNextPost(typeSection)
             }
             R.id.fab_replay -> {
-                //TODO: ADD IMPL
+                viewModel.getBackPost(typeSection)
             }
         }
     }

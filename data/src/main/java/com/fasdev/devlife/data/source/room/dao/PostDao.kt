@@ -11,5 +11,5 @@ import kotlinx.coroutines.flow.Flow
 abstract class PostDao: BaseDao<PostDB>
 {
     @Query("SELECT * FROM ${DevLifeDB.POST_TABLE} WHERE id = :idPost")
-    abstract fun getPost(idPost: Long): Flow<PostDB?>
+    abstract fun getPost(idPost: Long): PostDB?
 }
