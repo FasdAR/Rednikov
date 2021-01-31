@@ -63,8 +63,8 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState
         return binding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         viewModel.state.observe(viewLifecycleOwner) {
             render(it)
