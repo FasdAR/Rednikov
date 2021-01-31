@@ -7,13 +7,15 @@ import com.fasdev.devlife.data.source.room.dao.PostQueueDao
 import com.fasdev.devlife.data.source.room.dao.QueueDao
 import com.fasdev.devlife.data.source.room.model.toPost
 import com.fasdev.devlife.data.source.room.model.toPostDB
+import com.fasdev.devlife.data.source.shareData.SharedData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 class LocalRepositoryImpl(private val queueDao: QueueDao,
                           private val postDao: PostDao,
-                          private val postQueueDao: PostQueueDao): LocalRepository
+                          private val postQueueDao: PostQueueDao,
+                          private val sharedData: SharedData): LocalRepository
 {
     override fun savePost(typeSection: TypeSection, post: Post) {
         postQueueDao.cachePost(typeSection.type, post.toPostDB())
@@ -46,6 +48,26 @@ class LocalRepositoryImpl(private val queueDao: QueueDao,
             emit(true)
         } else {
             emit(false)
+        }
+    }
+
+    override fun getSavedIdPost(typeSection: TypeSection): Flow<Long> = flow {
+        emit(
+            when (typeSection)
+            {
+                TypeSection.LATEST -> sharedData.latestId
+                TypeSection.TOP -> sharedData.topId
+                TypeSection.HOT -> sharedData.hotId
+            }
+        )
+    }
+
+    override fun setSavedIdPost(typeSection: TypeSection, postId: Long) {
+        when (typeSection)
+        {
+            TypeSection.HOT -> sharedData.hotId = postId
+            TypeSection.TOP -> sharedData.topId = postId
+            TypeSection.LATEST -> sharedData.latestId = postId
         }
     }
 }

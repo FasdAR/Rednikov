@@ -1,5 +1,7 @@
 package com.fasdev.devloperlife.app.di.module
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.room.Room
 import com.fasdev.devlife.data.repository.local.LocalRepository
 import com.fasdev.devlife.data.repository.local.LocalRepositoryImpl
@@ -10,10 +12,11 @@ import com.fasdev.devlife.data.source.room.DevLifeDB
 import com.fasdev.devlife.data.source.room.dao.PostDao
 import com.fasdev.devlife.data.source.room.dao.PostQueueDao
 import com.fasdev.devlife.data.source.room.dao.QueueDao
+import com.fasdev.devlife.data.source.shareData.SharedData
 import com.fasdev.devloperlife.BuildConfig
 import com.fasdev.devloperlife.app.util.bindViewModel
 import com.fasdev.devloperlife.ui.fragment.post.ui.PostFragment
-import com.fasdev.devloperlife.ui.fragment.post.viewModel.PostCase
+import com.fasdev.devloperlife.ui.fragment.post.useCase.PostUseCase
 import com.fasdev.devloperlife.ui.fragment.post.viewModel.PostViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -94,7 +97,7 @@ val dbModule = DI.Module("db") {
 
 val repositoryModule = DI.Module("repository") {
     bind<LocalRepository>() with singleton {
-        LocalRepositoryImpl(instance(), instance(), instance())
+        LocalRepositoryImpl(instance(), instance(), instance(), instance())
     }
 
     bind<NetworkRepository>() with singleton {
@@ -102,6 +105,17 @@ val repositoryModule = DI.Module("repository") {
     }
 
     bind() from provider {
-        PostCase(instance(), instance())
+        PostUseCase(instance(), instance())
+    }
+
+    constant(tag = "name_settings") with SharedData.NAME_SETTINGS
+
+    bind() from provider {
+        instance<Context>()
+                .getSharedPreferences(instance(tag = "name_settings"), Context.MODE_PRIVATE)
+    }
+
+    bind() from provider {
+        SharedData(instance())
     }
 }

@@ -16,4 +16,7 @@ interface LocalRepository
     fun getBackPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?>
 
     fun isLastPost(typeSection: TypeSection, postId: Long): Flow<Boolean>
+
+    fun getSavedIdPost(typeSection: TypeSection): Flow<Long>
+    fun setSavedIdPost(typeSection: TypeSection, postId: Long)
 }

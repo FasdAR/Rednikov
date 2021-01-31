@@ -127,8 +127,6 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState
                 setVisibleExHostLayout(false)
                 setVisibleNullLayout(false)
 
-                Log.d("STATE_POST", state.isLoaded.toString() + " " + state.isLoadedImage.toString())
-
                 if (!state.isLoadedImage && !state.gifUrl.isNullOrEmpty()) {
                     Glide.with(this)
                             .load(state.gifUrl)
