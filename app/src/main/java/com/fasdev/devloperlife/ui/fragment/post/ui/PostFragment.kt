@@ -158,10 +158,12 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState
 
                 if (isLoaded) {
                     binding.textPost.text = state.description
+                    binding.imagePost.isVisible = true
                     setVisibleLoadedLayout(false)
                 }
                 else {
                     binding.textPost.text = ""
+                    binding.imagePost.isVisible = false
                     setVisibleLoadedLayout(true)
                 }
             }
