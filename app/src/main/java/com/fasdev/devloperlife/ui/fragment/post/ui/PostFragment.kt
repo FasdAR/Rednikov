@@ -2,13 +2,13 @@ package com.fasdev.devloperlife.ui.fragment.post.ui
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
+import com.bumptech.glide.RequestBuilder
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
@@ -19,13 +19,16 @@ import com.fasdev.devloperlife.R
 import com.fasdev.devloperlife.app.util.getEnum
 import com.fasdev.devloperlife.app.util.putEnum
 import com.fasdev.devloperlife.databinding.FragmentPostBinding
+import com.fasdev.devloperlife.ui.fragment.post.viewModel.PostEvent
+import com.fasdev.devloperlife.ui.fragment.post.viewModel.PostState
 import com.fasdev.devloperlife.ui.fragment.post.viewModel.PostViewModel
+import com.fasdev.devloperlife.ui.mvi.MviView
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.android.x.di
 import org.kodein.di.instance
 
-class PostFragment: Fragment(), DIAware, View.OnClickListener
+class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState>
 {
     companion object {
         private const val TYPE_SECTION_KEY = "tsk"
@@ -51,6 +54,7 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
                               savedInstanceState: Bundle?): View
     {
         binding = FragmentPostBinding.inflate(inflater)
+
         binding.fabNext.setOnClickListener(this)
         binding.fabReplay.setOnClickListener(this)
         binding.repeatBtn.setOnClickListener(this)
@@ -61,68 +65,11 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        viewModel.currentPost.observe(viewLifecycleOwner) {
-            setVisibleExHostLayout(false)
-            it?.let {
-                setVisibleMainLayout(true)
-                binding.nullPost.isVisible = false
-
-                binding.progressBar.isVisible = true
-                Glide.with(this)
-                        .load(it.gifURL)
-                        .transition(withCrossFade())
-                        .addListener(object : RequestListener<Drawable> {
-                            override fun onLoadFailed(
-                                e: GlideException?,
-                                model: Any?,
-                                target: Target<Drawable>?,
-                                isFirstResource: Boolean
-                            ): Boolean {
-                                setVisibleMainLayout(false)
-                                setVisibleExHostLayout(true)
-                                binding.progressBar.isVisible = false
-                                return false
-                            }
-
-                            override fun onResourceReady(
-                                resource: Drawable?,
-                                model: Any?,
-                                target: Target<Drawable>?,
-                                dataSource: DataSource?,
-                                isFirstResource: Boolean
-                            ): Boolean {
-                                binding.progressBar.isVisible = false
-                                return false
-                            }
-                        })
-                        .into(binding.imagePost)
-
-                binding.textPost.text = it.description
-            } ?: kotlin.run {
-                setVisibleMainLayout(false)
-                binding.nullPost.isVisible = true
-                binding.progressBar.isVisible = false
-            }
+        viewModel.state.observe(viewLifecycleOwner) {
+            render(it)
         }
 
-        viewModel.isEnableBackBtn.observe(viewLifecycleOwner) {
-            binding.fabReplay.isEnabled = it
-        }
-
-        viewModel.unknownHost.observe(viewLifecycleOwner) {
-            setVisibleMainLayout(false)
-            setVisibleExHostLayout(it)
-            binding.progressBar.isVisible = false
-        }
-
-        viewModel.isShowLoading.observe(viewLifecycleOwner) {
-            if (it) {
-                setVisibleMainLayout(false)
-                binding.progressBar.isVisible = it
-            }
-        }
-
-        viewModel.typeSection = typeSection
+        viewModel.handleEvent(PostEvent.SetTypeSection(typeSection))
     }
 
     private fun setVisibleMainLayout(isVisible: Boolean) {
@@ -135,18 +82,85 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
         binding.exHost.isVisible = isVisible
     }
 
+    private fun setVisibleLoadedLayout(isVisible: Boolean) {
+        binding.progressBar.isVisible = isVisible
+    }
+
+    private fun setVisibleNullLayout(isVisible: Boolean) {
+        binding.nullPost.isVisible = isVisible
+    }
+
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.fab_next -> {
-                viewModel.getNextPost()
+                viewModel.handleEvent(PostEvent.GetNextPost)
             }
             R.id.fab_replay -> {
-                viewModel.getBackPost()
+                viewModel.handleEvent(PostEvent.GetBackPost)
             }
             R.id.repeat_btn -> {
-                //setVisibleExHostLayout(false)
+                viewModel.handleEvent(PostEvent.ReloadPost)
+            }
+        }
+    }
 
-                viewModel.reloadPost()
+    override fun render(state: PostState)
+    {
+        when (state) {
+            PostState.Loaded -> {
+                setVisibleMainLayout(false)
+                setVisibleExHostLayout(false)
+                setVisibleNullLayout(false)
+
+                setVisibleLoadedLayout(true)
+            }
+            PostState.UnknownHost -> {
+                setVisibleMainLayout(false)
+                setVisibleNullLayout(false)
+                setVisibleLoadedLayout(false)
+
+                setVisibleExHostLayout(true)
+            }
+            PostState.NullPost -> {
+                setVisibleMainLayout(false)
+                setVisibleExHostLayout(false)
+                setVisibleLoadedLayout(false)
+
+                setVisibleNullLayout(true)
+            }
+            is PostState.SetPost -> {
+                setVisibleExHostLayout(false)
+                setVisibleLoadedLayout(false)
+                setVisibleNullLayout(false)
+
+                setVisibleMainLayout(true)
+
+                binding.fabReplay.isEnabled = !state.isLatest
+
+                binding.textPost.text = state.post.description
+
+                Glide.with(this)
+                        .load(state.post.gifURL)
+                        .addListener(object: RequestListener<Drawable> {
+                            override fun onLoadFailed(e: GlideException?, model: Any?,
+                                                      target: Target<Drawable>?,
+                                                      isFirstResource: Boolean): Boolean
+                            {
+                                viewModel.handleEvent(PostEvent.GlideDontLoad)
+                                return false
+                            }
+
+                            override fun onResourceReady(resource: Drawable?, model: Any?,
+                                                         target: Target<Drawable>?,
+                                                         dataSource: DataSource?,
+                                                         isFirstResource: Boolean): Boolean
+                            {
+                                return false
+                            }
+
+                        })
+                        .transition(withCrossFade())
+                        .into(binding.imagePost)
             }
         }
     }

@@ -5,12 +5,13 @@ import com.fasdev.devlife.core.common.model.Post
 import com.fasdev.devlife.core.common.model.TypeSection
 import com.fasdev.devlife.data.repository.local.LocalRepository
 import com.fasdev.devlife.data.repository.network.NetworkRepository
+import com.fasdev.devloperlife.ui.mvi.MviModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 
-class PostViewModel(private var postCase: PostCase): ViewModel()
+class PostViewModel(private var postCase: PostCase): ViewModel(), MviModel<PostState, PostEvent>
 {
     class Factory(private var postCase: PostCase): ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -18,92 +19,109 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
         }
     }
 
-    val isShowLoading: MutableLiveData<Boolean> = MutableLiveData(false)
-    val unknownHost: MutableLiveData<Boolean> = MutableLiveData(false)
-    val isEnableBackBtn: MutableLiveData<Boolean> = MutableLiveData(false)
-    val currentPost: MutableLiveData<Post> = MutableLiveData()
+    override val state: MutableLiveData<PostState> = MutableLiveData()
 
-    var typeSection: TypeSection? = null
-        get() = field
+    private var typeSection: TypeSection? = null
         set(value) {
             if (field == null) {
                 field = value
                 value?.let {
-                    getNextPost()
+                    handleEvent(PostEvent.GetNextPost)
                 }
             }
         }
 
-    fun getNextPost() {
-        viewModelScope.launch {
-            typeSection?.let { typeSection ->
-                postCase.getNextPost(typeSection)
-                    .handleQuery()
-                    .collect {
-                        currentPost.postValue(it)
-                        checkLastPost(typeSection)
-                    }
+    override fun handleEvent(event: PostEvent)
+    {
+        when (event)
+        {
+            is PostEvent.SetTypeSection -> {
+                typeSection = event.typeSection
+            }
+            PostEvent.GetNextPost -> {
+                startPostQuery { typeSection ->
+                    postCase.getNextPost(typeSection)
+                            .wrapPostQuery()
+                            .collect {
+                                if (it == null) {
+                                    state.postValue(PostState.NullPost)
+                                }
+                                else {
+                                    state.postValue(
+                                            PostState.SetPost(isLatestPost(typeSection), it)
+                                    )
+                                }
+                            }
+                }
+            }
+            PostEvent.GetBackPost -> {
+                startPostQuery { typeSection ->
+                    postCase.getBackPost(typeSection)
+                            .wrapPostQuery()
+                            .collect {
+                                if (it == null) {
+                                    state.postValue(PostState.NullPost)
+                                }
+                                else {
+                                    state.postValue(
+                                            PostState.SetPost(isLatestPost(typeSection), it)
+                                    )
+                                }
+                            }
+                }
+            }
+            PostEvent.ReloadPost -> {
+                startPostQuery { typeSection ->
+                    postCase.reloadPost(typeSection)
+                            .wrapPostQuery()
+                            .collect {
+                                if (it == null) {
+                                    state.postValue(PostState.NullPost)
+                                }
+                                else {
+                                    state.postValue(
+                                            PostState.SetPost(isLatestPost(typeSection), it)
+                                    )
+                                }
+                            }
+                }
+            }
+            PostEvent.GlideDontLoad -> {
+                state.postValue(PostState.UnknownHost)
             }
         }
     }
 
-    fun reloadPost() {
+    private fun startPostQuery(unit: suspend (typeSection: TypeSection) -> Unit) {
         viewModelScope.launch {
-            typeSection?.let { typeSection ->
-                postCase.reloadPost(typeSection)
-                    .handleQuery()
-                    .collect {
-                        currentPost.postValue(it)
-                        checkLastPost(typeSection)
-                    }
-            }
+            typeSection?.let { unit(it) }
         }
     }
 
-    fun getBackPost() {
-        viewModelScope.launch {
-            typeSection?.let { typeSection ->
-                postCase.getBackPost(typeSection)
-                    .handleQuery()
-                    .collect {
-                        currentPost.postValue(it)
-                        checkLastPost(typeSection)
-                    }
-            }
-        }
-    }
-
-    private fun <T> Flow<T>.handleQuery(): Flow<T> {
+    private fun <T> Flow<T>.wrapPostQuery(): Flow<T> {
         return this
-            .flowOn(Dispatchers.IO)
-            .onStart {
-                isShowLoading.postValue(true)
-            }
-            .onCompletion {
-                isShowLoading.postValue(false)
-            }
-            .catch {
+                .flowOn(Dispatchers.IO)
+                .onStart {
+                    state.postValue(PostState.Loaded)
+                }
+                .catch {
                     ex -> handleException(ex)
-            }
+                }
     }
 
     private fun handleException(ex: Throwable) {
         when (ex)
         {
             is UnknownHostException -> {
-                unknownHost.postValue(true)
+                state.postValue(PostState.UnknownHost)
             }
         }
     }
 
-    private fun checkLastPost(typeSection: TypeSection) {
-        viewModelScope.launch {
-            postCase.isLastPost(typeSection)
-                    .flowOn(Dispatchers.IO)
-                    .collect {
-                        isEnableBackBtn.postValue(!it)
-                    }
-        }
+    private suspend fun isLatestPost(typeSection: TypeSection): Boolean {
+        return postCase.isLastPost(typeSection)
+                .flowOn(Dispatchers.IO)
+                .first()
     }
 }
 
