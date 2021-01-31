@@ -5,8 +5,12 @@ import com.fasdev.devloperlife.ui.mvi.ViewState
 
 sealed class PostState: ViewState
 {
-    object Loaded: PostState()
     object UnknownHost: PostState()
     object NullPost: PostState()
-    data class SetPost(val isLatest: Boolean, val post: Post): PostState()
+    data class PostInfo(
+            val isLoaded: Boolean = false,
+            val isLoadedImage: Boolean = false,
+            val isLatest: Boolean = false,
+            val description: String? = null,
+            val gifUrl: String? = null): PostState()
 }

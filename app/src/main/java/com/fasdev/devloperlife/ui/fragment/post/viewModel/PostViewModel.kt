@@ -19,6 +19,7 @@ class PostViewModel(private var postCase: PostCase): ViewModel(), MviModel<PostS
         }
     }
 
+    private var currentState: PostState? = null
     override val state: MutableLiveData<PostState> = MutableLiveData()
 
     private var typeSection: TypeSection? = null
@@ -29,7 +30,15 @@ class PostViewModel(private var postCase: PostCase): ViewModel(), MviModel<PostS
                     handleEvent(PostEvent.GetNextPost)
                 }
             }
+            else {
+                handleEvent(PostEvent.ReloadPost)
+            }
         }
+
+    private fun updateState(newState: PostState) {
+        currentState = newState
+        state.postValue(currentState)
+    }
 
     override fun handleEvent(event: PostEvent)
     {
@@ -44,12 +53,12 @@ class PostViewModel(private var postCase: PostCase): ViewModel(), MviModel<PostS
                             .wrapPostQuery()
                             .collect {
                                 if (it == null) {
-                                    state.postValue(PostState.NullPost)
+                                    updateState(PostState.NullPost)
                                 }
                                 else {
-                                    state.postValue(
-                                            PostState.SetPost(isLatestPost(typeSection), it)
-                                    )
+                                    updateState(PostState.PostInfo(isLoaded = true,
+                                            isLoadedImage = false, isLatest = isLatestPost(typeSection),
+                                            description = it.description, gifUrl = it.gifURL))
                                 }
                             }
                 }
@@ -60,12 +69,12 @@ class PostViewModel(private var postCase: PostCase): ViewModel(), MviModel<PostS
                             .wrapPostQuery()
                             .collect {
                                 if (it == null) {
-                                    state.postValue(PostState.NullPost)
+                                    updateState(PostState.NullPost)
                                 }
                                 else {
-                                    state.postValue(
-                                            PostState.SetPost(isLatestPost(typeSection), it)
-                                    )
+                                    updateState(PostState.PostInfo(isLoaded = true,
+                                            isLoadedImage = false, isLatest = isLatestPost(typeSection),
+                                            description = it.description, gifUrl = it.gifURL))
                                 }
                             }
                 }
@@ -76,18 +85,22 @@ class PostViewModel(private var postCase: PostCase): ViewModel(), MviModel<PostS
                             .wrapPostQuery()
                             .collect {
                                 if (it == null) {
-                                    state.postValue(PostState.NullPost)
+                                    updateState(PostState.NullPost)
                                 }
                                 else {
-                                    state.postValue(
-                                            PostState.SetPost(isLatestPost(typeSection), it)
-                                    )
+                                    updateState(PostState.PostInfo(isLoaded = true,
+                                            isLoadedImage = false, isLatest = isLatestPost(typeSection),
+                                            description = it.description, gifUrl = it.gifURL))
                                 }
                             }
                 }
             }
-            PostEvent.GlideDontLoad -> {
-                state.postValue(PostState.UnknownHost)
+            is PostEvent.ImageLoaded -> {
+                val state = currentState as PostState.PostInfo
+                updateState(state.copy(isLoadedImage = true))
+            }
+            PostEvent.ImageErrorLoad -> {
+                updateState(PostState.UnknownHost)
             }
         }
     }
@@ -102,7 +115,7 @@ class PostViewModel(private var postCase: PostCase): ViewModel(), MviModel<PostS
         return this
                 .flowOn(Dispatchers.IO)
                 .onStart {
-                    state.postValue(PostState.Loaded)
+                    state.postValue(PostState.PostInfo(isLoaded = false))
                 }
                 .catch {
                     ex -> handleException(ex)

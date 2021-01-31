@@ -2,6 +2,7 @@ package com.fasdev.devloperlife.ui.fragment.post.ui
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -107,13 +108,6 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState
     override fun render(state: PostState)
     {
         when (state) {
-            PostState.Loaded -> {
-                setVisibleMainLayout(false)
-                setVisibleExHostLayout(false)
-                setVisibleNullLayout(false)
-
-                setVisibleLoadedLayout(true)
-            }
             PostState.UnknownHost -> {
                 setVisibleMainLayout(false)
                 setVisibleNullLayout(false)
@@ -128,39 +122,50 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState
 
                 setVisibleNullLayout(true)
             }
-            is PostState.SetPost -> {
+            is PostState.PostInfo -> {
+                setVisibleMainLayout(true)
                 setVisibleExHostLayout(false)
-                setVisibleLoadedLayout(false)
                 setVisibleNullLayout(false)
 
-                setVisibleMainLayout(true)
+                Log.d("STATE_POST", state.isLoaded.toString() + " " + state.isLoadedImage.toString())
+
+                if (!state.isLoadedImage && !state.gifUrl.isNullOrEmpty()) {
+                    Glide.with(this)
+                            .load(state.gifUrl)
+                            .addListener(object : RequestListener<Drawable> {
+                                override fun onLoadFailed(e: GlideException?, model: Any?,
+                                                          target: Target<Drawable>?,
+                                                          isFirstResource: Boolean): Boolean
+                                {
+                                    viewModel.handleEvent(PostEvent.ImageErrorLoad)
+                                    return false
+                                }
+
+                                override fun onResourceReady(resource: Drawable?, model: Any?,
+                                                             target: Target<Drawable>?,
+                                                             dataSource: DataSource?,
+                                                             isFirstResource: Boolean): Boolean
+                                {
+                                    viewModel.handleEvent(PostEvent.ImageLoaded)
+                                    return false
+                                }
+                            })
+                            .transition(withCrossFade())
+                            .into(binding.imagePost)
+                }
 
                 binding.fabReplay.isEnabled = !state.isLatest
 
-                binding.textPost.text = state.post.description
+                val isLoaded = state.isLoaded && state.isLoadedImage
 
-                Glide.with(this)
-                        .load(state.post.gifURL)
-                        .addListener(object: RequestListener<Drawable> {
-                            override fun onLoadFailed(e: GlideException?, model: Any?,
-                                                      target: Target<Drawable>?,
-                                                      isFirstResource: Boolean): Boolean
-                            {
-                                viewModel.handleEvent(PostEvent.GlideDontLoad)
-                                return false
-                            }
-
-                            override fun onResourceReady(resource: Drawable?, model: Any?,
-                                                         target: Target<Drawable>?,
-                                                         dataSource: DataSource?,
-                                                         isFirstResource: Boolean): Boolean
-                            {
-                                return false
-                            }
-
-                        })
-                        .transition(withCrossFade())
-                        .into(binding.imagePost)
+                if (isLoaded) {
+                    binding.textPost.text = state.description
+                    setVisibleLoadedLayout(false)
+                }
+                else {
+                    binding.textPost.text = ""
+                    setVisibleLoadedLayout(true)
+                }
             }
         }
     }
