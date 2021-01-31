@@ -63,12 +63,18 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onResume() {
+        super.onResume()
 
         viewModel.state.observe(viewLifecycleOwner) {
-            render(it)
+            if (isVisible) {
+                render(it)
+            }
         }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
         viewModel.handleEvent(PostEvent.SetTypeSection(typeSection))
     }
@@ -128,28 +134,29 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener, MviView<PostState
                 setVisibleNullLayout(false)
 
                 if (!state.isLoadedImage && !state.gifUrl.isNullOrEmpty()) {
-                    Glide.with(this)
-                            .load(state.gifUrl)
-                            .addListener(object : RequestListener<Drawable> {
-                                override fun onLoadFailed(e: GlideException?, model: Any?,
-                                                          target: Target<Drawable>?,
-                                                          isFirstResource: Boolean): Boolean
-                                {
-                                    viewModel.handleEvent(PostEvent.ImageErrorLoad)
-                                    return false
-                                }
+                    Glide
+                        .with(this@PostFragment)
+                        .load(state.gifUrl)
+                        .addListener(object : RequestListener<Drawable> {
+                            override fun onLoadFailed(e: GlideException?, model: Any?,
+                                                      target: Target<Drawable>?,
+                                                      isFirstResource: Boolean): Boolean
+                            {
+                                viewModel.handleEvent(PostEvent.ImageErrorLoad)
+                                return false
+                            }
 
-                                override fun onResourceReady(resource: Drawable?, model: Any?,
-                                                             target: Target<Drawable>?,
-                                                             dataSource: DataSource?,
-                                                             isFirstResource: Boolean): Boolean
-                                {
-                                    viewModel.handleEvent(PostEvent.ImageLoaded)
-                                    return false
-                                }
-                            })
-                            .transition(withCrossFade())
-                            .into(binding.imagePost)
+                            override fun onResourceReady(resource: Drawable?, model: Any?,
+                                                         target: Target<Drawable>?,
+                                                         dataSource: DataSource?,
+                                                         isFirstResource: Boolean): Boolean
+                            {
+                                viewModel.handleEvent(PostEvent.ImageLoaded)
+                                return false
+                            }
+                        })
+                        .transition(withCrossFade())
+                        .into(binding.imagePost)
                 }
 
                 binding.fabReplay.isEnabled = !state.isLatest
