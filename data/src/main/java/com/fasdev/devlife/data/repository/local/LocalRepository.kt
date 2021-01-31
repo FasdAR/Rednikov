@@ -14,4 +14,6 @@ interface LocalRepository
 
     fun getNextPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?>
     fun getBackPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?>
+
+    fun isLastPost(typeSection: TypeSection, postId: Long): Flow<Boolean>
 }

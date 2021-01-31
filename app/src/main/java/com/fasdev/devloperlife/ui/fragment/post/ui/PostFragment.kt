@@ -63,6 +63,10 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
                 binding.textPost.text = it.description
             }
         }
+
+        viewModel.isEnableBackBtn.observe(viewLifecycleOwner) {
+            binding.fabReplay.isEnabled = it
+        }
         viewModel.getNextPost(typeSection)
     }
 

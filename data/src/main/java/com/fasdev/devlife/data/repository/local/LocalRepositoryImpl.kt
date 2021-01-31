@@ -40,4 +40,12 @@ class LocalRepositoryImpl(private val queueDao: QueueDao,
     override fun getBackPost(typeSection: TypeSection, prevIdPost: Long): Flow<Post?> = flow {
         emit(queueDao.getBackPost(typeSection.type, prevIdPost)?.post?.toPost())
     }
+
+    override fun isLastPost(typeSection: TypeSection, postId: Long): Flow<Boolean> = flow {
+        if (queueDao.getIndexCurrentItem(typeSection.type, postId) == 1) {
+            emit(true)
+        } else {
+            emit(false)
+        }
+    }
 }

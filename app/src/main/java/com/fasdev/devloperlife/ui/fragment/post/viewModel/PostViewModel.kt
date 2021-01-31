@@ -18,6 +18,7 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
         }
     }
 
+    val isEnableBackBtn: MutableLiveData<Boolean> = MutableLiveData(false)
     val currentPost: MutableLiveData<Post> = MutableLiveData()
 
     fun getNextPost(typeSection: TypeSection) {
@@ -29,6 +30,7 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
                     }
                     .collect {
                         currentPost.postValue(it)
+                        checkLastPost(typeSection)
                     }
         }
     }
@@ -42,6 +44,17 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
                     }
                     .collect {
                         currentPost.postValue(it)
+                        checkLastPost(typeSection)
+                    }
+        }
+    }
+
+    private fun checkLastPost(typeSection: TypeSection) {
+        viewModelScope.launch {
+            postCase.isLastPost(typeSection)
+                    .flowOn(Dispatchers.IO)
+                    .collect {
+                        isEnableBackBtn.postValue(!it)
                     }
         }
     }
@@ -93,4 +106,8 @@ class PostCase(private val localRepository: LocalRepository,
                     .onEach {
                         it?.let { currentIdPost = it.id }
                     }
+
+    fun isLastPost(typeSection: TypeSection): Flow<Boolean> = localRepository
+            .isLastPost(typeSection, currentIdPost)
+
 }
