@@ -1,13 +1,19 @@
 package com.fasdev.devloperlife.ui.fragment.post.ui
 
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.fasdev.devlife.core.common.model.TypeSection
 import com.fasdev.devloperlife.R
 import com.fasdev.devloperlife.app.util.getEnum
@@ -56,19 +62,46 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
         super.onActivityCreated(savedInstanceState)
 
         viewModel.currentPost.observe(viewLifecycleOwner) {
+            setVisibleExHostLayout(false)
             it?.let {
                 setVisibleMainLayout(true)
                 binding.nullPost.isVisible = false
 
+                binding.progressBar.isVisible = true
                 Glide.with(this)
                         .load(it.gifURL)
                         .transition(withCrossFade())
+                        .addListener(object : RequestListener<Drawable> {
+                            override fun onLoadFailed(
+                                e: GlideException?,
+                                model: Any?,
+                                target: Target<Drawable>?,
+                                isFirstResource: Boolean
+                            ): Boolean {
+                                setVisibleMainLayout(false)
+                                setVisibleExHostLayout(true)
+                                binding.progressBar.isVisible = false
+                                return false
+                            }
+
+                            override fun onResourceReady(
+                                resource: Drawable?,
+                                model: Any?,
+                                target: Target<Drawable>?,
+                                dataSource: DataSource?,
+                                isFirstResource: Boolean
+                            ): Boolean {
+                                binding.progressBar.isVisible = false
+                                return false
+                            }
+                        })
                         .into(binding.imagePost)
 
                 binding.textPost.text = it.description
             } ?: kotlin.run {
                 setVisibleMainLayout(false)
                 binding.nullPost.isVisible = true
+                binding.progressBar.isVisible = false
             }
         }
 
@@ -77,18 +110,19 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
         }
 
         viewModel.unknownHost.observe(viewLifecycleOwner) {
-            setVisibleMainLayout(!it)
+            setVisibleMainLayout(false)
             setVisibleExHostLayout(it)
+            binding.progressBar.isVisible = false
         }
 
         viewModel.isShowLoading.observe(viewLifecycleOwner) {
             if (it) {
                 setVisibleMainLayout(false)
+                binding.progressBar.isVisible = it
             }
-            binding.progressBar.isVisible = it
         }
 
-        viewModel.getNextPost(typeSection)
+        viewModel.typeSection = typeSection
     }
 
     private fun setVisibleMainLayout(isVisible: Boolean) {
@@ -104,15 +138,15 @@ class PostFragment: Fragment(), DIAware, View.OnClickListener
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.fab_next -> {
-                viewModel.getNextPost(typeSection)
+                viewModel.getNextPost()
             }
             R.id.fab_replay -> {
-                viewModel.getBackPost(typeSection)
+                viewModel.getBackPost()
             }
             R.id.repeat_btn -> {
-                setVisibleExHostLayout(false)
+                //setVisibleExHostLayout(false)
 
-                viewModel.getNextPost(typeSection)
+                viewModel.reloadPost()
             }
         }
     }

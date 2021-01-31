@@ -1,6 +1,5 @@
 package com.fasdev.devloperlife.ui.fragment.post.viewModel
 
-import android.util.Log
 import androidx.lifecycle.*
 import com.fasdev.devlife.core.common.model.Post
 import com.fasdev.devlife.core.common.model.TypeSection
@@ -9,7 +8,6 @@ import com.fasdev.devlife.data.repository.network.NetworkRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.lang.Exception
 import java.net.UnknownHostException
 
 class PostViewModel(private var postCase: PostCase): ViewModel()
@@ -25,44 +23,68 @@ class PostViewModel(private var postCase: PostCase): ViewModel()
     val isEnableBackBtn: MutableLiveData<Boolean> = MutableLiveData(false)
     val currentPost: MutableLiveData<Post> = MutableLiveData()
 
-    fun getNextPost(typeSection: TypeSection) {
+    var typeSection: TypeSection? = null
+        get() = field
+        set(value) {
+            if (field == null) {
+                field = value
+                value?.let {
+                    getNextPost()
+                }
+            }
+        }
+
+    fun getNextPost() {
         viewModelScope.launch {
-            postCase.getNextPost(typeSection)
-                    .flowOn(Dispatchers.IO)
-                    .onStart {
-                        isShowLoading.postValue(true)
-                    }
-                    .onCompletion {
-                        isShowLoading.postValue(false)
-                    }
-                    .catch { ex ->
-                        handleException(ex)
-                    }
+            typeSection?.let { typeSection ->
+                postCase.getNextPost(typeSection)
+                    .handleQuery()
                     .collect {
                         currentPost.postValue(it)
                         checkLastPost(typeSection)
                     }
+            }
         }
     }
 
-    fun getBackPost(typeSection: TypeSection) {
+    fun reloadPost() {
         viewModelScope.launch {
-            postCase.getBackPost(typeSection)
-                    .flowOn(Dispatchers.IO)
-                    .onStart {
-                        isShowLoading.postValue(true)
-                    }
-                    .onCompletion {
-                        isShowLoading.postValue(false)
-                    }
-                    .catch { ex ->
-                        handleException(ex)
-                    }
+            typeSection?.let { typeSection ->
+                postCase.reloadPost(typeSection)
+                    .handleQuery()
                     .collect {
                         currentPost.postValue(it)
                         checkLastPost(typeSection)
                     }
+            }
         }
+    }
+
+    fun getBackPost() {
+        viewModelScope.launch {
+            typeSection?.let { typeSection ->
+                postCase.getBackPost(typeSection)
+                    .handleQuery()
+                    .collect {
+                        currentPost.postValue(it)
+                        checkLastPost(typeSection)
+                    }
+            }
+        }
+    }
+
+    private fun <T> Flow<T>.handleQuery(): Flow<T> {
+        return this
+            .flowOn(Dispatchers.IO)
+            .onStart {
+                isShowLoading.postValue(true)
+            }
+            .onCompletion {
+                isShowLoading.postValue(false)
+            }
+            .catch {
+                    ex -> handleException(ex)
+            }
     }
 
     private fun handleException(ex: Throwable) {
@@ -109,6 +131,14 @@ class PostCase(private val localRepository: LocalRepository,
 
     private fun loadNextPost(typeSection: TypeSection): Flow<Post?> =
             localRepository.getNextPost(typeSection, currentIdPost)
+
+    fun reloadPost(typeSection: TypeSection): Flow<Post?> {
+        return if (currentIdPost == -1L) {
+            getNextPost(typeSection)
+        } else {
+            localRepository.getPost(currentIdPost)
+        }
+    }
 
     fun getNextPost(typeSection: TypeSection): Flow<Post?> =
             loadNextPost(typeSection)
